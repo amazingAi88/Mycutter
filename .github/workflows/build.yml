@@ -5,89 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble project
-        run: |
-          MA=$(find . -name MainActivity.kt -not -path './proj/*' -not -path './.git/*' | head -n1)
-          [ -z "$MA" ] && { echo "MainActivity.kt not found"; exit 1; }
-          D=proj/app/src/main
-          mkdir -p $D/java/com/example/cutter $D/res/drawable $D/res/mipmap-anydpi $D/res/values
-          cp "$MA" $D/java/com/example/cutter/MainActivity.kt
-          cat > $D/AndroidManifest.xml <<'E'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <application android:label="Simple Cutter" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@android:style/Theme.Material.Light.NoActionBar">
-                  <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|layoutDirection|locale">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          E
-          cat > $D/res/values/colors.xml <<'E'
-          <resources><color name="ic_bg">#E3F2FD</color></resources>
-          E
-          cat > $D/res/mipmap-anydpi/ic_launcher.xml <<'E'
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_bg"/>
-              <foreground android:drawable="@drawable/ic_fg"/>
-          </adaptive-icon>
-          E
-          cat > $D/res/drawable/ic_fg.xml <<'E'
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-              <path android:fillColor="#37474F" android:pathData="M24,38h60v32h-60z"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M27,41h5v4h-5z M37,41h5v4h-5z M47,41h5v4h-5z M57,41h5v4h-5z M67,41h5v4h-5z M77,41h5v4h-5z M27,63h5v4h-5z M37,63h5v4h-5z M47,63h5v4h-5z M57,63h5v4h-5z M67,63h5v4h-5z M77,63h5v4h-5z"/>
-              <path android:fillColor="#90CAF9" android:pathData="M27,48h14v12h-14z M45,48h14v12h-14z M63,48h14v12h-14z"/>
-              <path android:strokeColor="#FF7043" android:strokeWidth="3.5" android:strokeLineCap="round" android:pathData="M22,43.6L74,64.4 M22,64.4L74,43.6"/>
-              <path android:strokeColor="#FF7043" android:strokeWidth="3" android:pathData="M74,66a5,5 0 1,0 10,0a5,5 0 1,0 -10,0 M74,42a5,5 0 1,0 10,0a5,5 0 1,0 -10,0"/>
-          </vector>
-          E
-          cd proj
-          cat > settings.gradle.kts <<'E'
-          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-          dependencyResolutionManagement { repositories { google(); mavenCentral() } }
-          rootProject.name = "CutterApp"
-          include(":app")
-          E
-          cat > build.gradle.kts <<'E'
-          plugins {
-              id("com.android.application") version "8.5.2" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.24" apply false
-          }
-          E
-          printf 'android.useAndroidX=true\norg.gradle.jvmargs=-Xmx2g\n' > gradle.properties
-          cat > app/build.gradle.kts <<'E'
-          plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android {
-              namespace = "com.example.cutter"
-              compileSdk = 34
-              defaultConfig { applicationId = "com.example.cutter"; minSdk = 30; targetSdk = 34; versionCode = 1; versionName = "1.0" }
-              buildFeatures { compose = true }
-              composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
-              compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-              kotlinOptions { jvmTarget = "17" }
-          }
-          dependencies {
-              implementation(platform("androidx.compose:compose-bom:2024.06.00"))
-              implementation("androidx.compose.material3:material3")
-              implementation("androidx.activity:activity-compose:1.9.0")
-              implementation("androidx.documentfile:documentfile:1.0.1")
-              implementation("androidx.media3:media3-transformer:1.4.1")
-              implementation("androidx.media3:media3-effect:1.4.1")
-              implementation("androidx.media3:media3-common:1.4.1")
-              implementation("androidx.media3:media3-exoplayer:1.4.1")
-              implementation("androidx.media3:media3-ui:1.4.1")
-          }
-          E
+      - run: unzip -q CutterApp.zip -d src
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: 8.7 }
       - name: Build
-        working-directory: proj
+        working-directory: src/CutterApp
         run: gradle assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: SimpleCutter-debug-apk
-          path: proj/app/build/outputs/apk/debug/app-debug.apk
+          path: src/CutterApp/app/build/outputs/apk/debug/app-debug.apk
